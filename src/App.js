@@ -90,8 +90,6 @@ function App() {
   // Update the submit handler with better error handling
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Submitting form...'); // Debug log
-
     const newErrors = {};
 
     // Validate all personal information fields
@@ -122,14 +120,12 @@ function App() {
     }
 
     // If no errors, save to Firebase
-    console.log('Saving to Firebase...'); // Debug log
     const responsesRef = ref(db, 'responses');
 
     const dataToSubmit = {
       ...currentResponse,
       timestamp: new Date().toISOString()
     };
-    console.log('Data to submit:', dataToSubmit); // Debug log
 
     try {
       push(responsesRef, dataToSubmit)
@@ -149,7 +145,6 @@ function App() {
         })
         .catch((error) => {
           console.error('Firebase push error:', error); // More specific error log
-          console.error('Error details:', error.code, error.message); // Additional error details
         });
     } catch (error) {
       console.error('Try-catch error:', error); // Catch any synchronous errors
