@@ -463,7 +463,8 @@ function App() {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                marginBottom: '20px'
+                marginBottom: '20px',
+                flexWrap: 'wrap'
               }}
             >
               <h2>Survey Responses</h2>

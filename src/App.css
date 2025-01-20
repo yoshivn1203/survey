@@ -245,3 +245,42 @@
   margin-top: 8px !important;
   font-size: 0.85rem !important;
 }
+
+/* Add only mobile-specific adjustments */
+@media (max-width: 768px) {
+  .MuiFormLabel-root {
+    font-size: 0.9rem !important;
+  }
+
+  .MuiFormControlLabel-label {
+    font-size: 0.85rem !important;
+  }
+
+  .responses-table {
+    font-size: 12px;
+  }
+
+  .responses-table th,
+  .responses-table td {
+    padding: 8px 12px;
+  }
+
+  /* Stack export buttons vertically on mobile */
+  .responses-container .MuiStack-root {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  /* Adjust Likert scale for mobile */
+  .likert-scale {
+    gap: 4px;
+  }
+
+  .likert-scale .MuiFormControlLabel-label {
+    font-size: 0.8rem !important;
+  }
+
+  .likert-scale .MuiRadio-root {
+    padding: 4px !important;
+  }
+}
