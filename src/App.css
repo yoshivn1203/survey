@@ -1,0 +1,247 @@
+.App {
+  padding: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+.survey-intro {
+  margin-bottom: 30px;
+  text-align: left;
+}
+
+.section {
+  margin-bottom: 40px;
+  padding: 30px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.question {
+  margin-bottom: 30px !important;
+  width: 100%;
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.likert-question {
+  margin-bottom: 35px !important;
+  width: 100%;
+}
+
+.likert-scale {
+  justify-content: space-between !important;
+  max-width: 400px;
+  margin: 15px 0 !important;
+}
+
+.likert-scale label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.scale-description {
+  font-size: 0.9rem !important;
+  color: rgba(0, 0, 0, 0.6) !important;
+  margin-bottom: 25px !important;
+  font-style: italic;
+}
+
+.responses {
+  margin-top: 40px;
+}
+
+.response-card {
+  background-color: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.tabs button {
+  padding: 10px 20px;
+  border: none;
+  background-color: #f0f0f0;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.tabs button.active {
+  background-color: #4285f4;
+  color: white;
+}
+
+.responses-container {
+  padding: 20px;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  margin-top: 20px;
+  padding-bottom: 20px;
+}
+
+.responses-table {
+  width: 100%;
+  border-collapse: collapse;
+  white-space: normal;
+  font-size: 14px;
+}
+
+.responses-table th {
+  background-color: #a6c4fc;
+  font-weight: bold;
+  position: sticky;
+  top: 0;
+  min-width: 250px;
+  padding: 10px;
+  text-align: left;
+  vertical-align: top;
+  line-height: 1.4;
+  border: 1px solid #ddd;
+}
+
+.responses-table th:nth-child(1),
+.responses-table th:nth-child(2) {
+  min-width: 160px;
+}
+
+.responses-table td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: left;
+}
+
+.responses-table tr:nth-child(even) {
+  background-color: #f8f8f8;
+}
+
+.responses-table tr:hover {
+  background-color: #f0f0f0;
+}
+
+.table-wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.tabs-container {
+  margin-bottom: 24px;
+  border-radius: 8px !important;
+}
+
+.form-container,
+.responses-container {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Add these styles for better tab visibility */
+.MuiTab-root {
+  color: rgba(0, 0, 0, 0.7) !important;
+  background-color: transparent !important;
+}
+
+.MuiTab-root.Mui-selected {
+  color: #4285f4 !important;
+  background-color: rgba(66, 133, 244, 0.08) !important;
+  font-weight: bold !important;
+}
+
+.MuiTab-root:hover {
+  color: #4285f4 !important;
+  background-color: rgba(66, 133, 244, 0.04) !important;
+}
+
+/* Style the form labels */
+.MuiFormLabel-root {
+  color: rgba(0, 0, 0, 0.87) !important;
+  font-size: 1rem !important;
+  margin-bottom: 12px !important;
+  font-weight: 500 !important;
+}
+
+/* Style the radio buttons group */
+.likert-scale .MuiFormControlLabel-root {
+  margin: 0 !important;
+}
+
+/* Style the helper text */
+.scale-description {
+  font-size: 0.9rem !important;
+  color: rgba(0, 0, 0, 0.6) !important;
+  margin-bottom: 25px !important;
+  font-style: italic;
+}
+
+/* Style the radio buttons */
+.MuiRadio-root {
+  color: rgba(0, 0, 0, 0.6) !important;
+}
+
+.MuiRadio-root.Mui-checked {
+  color: #4285f4 !important;
+}
+
+/* Add hover effect */
+.MuiRadio-root:hover {
+  background-color: rgba(66, 133, 244, 0.04) !important;
+}
+
+/* Style form control labels */
+.MuiFormControlLabel-label {
+  font-size: 0.95rem !important;
+}
+
+/* Add styles for error states */
+.Mui-error .MuiFormLabel-root {
+  color: #d32f2f !important;
+}
+
+.MuiFormHelperText-root.Mui-error {
+  margin-top: 8px !important;
+  font-size: 0.85rem !important;
+}
