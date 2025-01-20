@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Tabs,
   Tab,
@@ -21,6 +21,8 @@ import SendIcon from '@mui/icons-material/Send';
 import DownloadIcon from '@mui/icons-material/Download';
 import * as XLSX from 'xlsx';
 import './App.css';
+import { ref, push, onValue } from 'firebase/database';
+import { db } from './firebase';
 
 function App() {
   const [formData, setFormData] = useState([]);
@@ -67,8 +69,28 @@ function App() {
     }).format(date);
   };
 
+  // Load responses from Firebase when component mounts
+  useEffect(() => {
+    const responsesRef = ref(db, 'responses');
+    onValue(responsesRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        // Convert Firebase object to array and parse dates
+        const responsesArray = Object.values(data).map((response) => ({
+          ...response,
+          timestamp: new Date(response.timestamp)
+        }));
+        setFormData(responsesArray);
+      }
+    });
+  }, []);
+
+  // Add this at the top of your component to verify Firebase connection
+
+  // Update the submit handler with better error handling
   const handleSubmit = (e) => {
     e.preventDefault();
+    console.log('Submitting form...'); // Debug log
 
     const newErrors = {};
 
@@ -99,22 +121,39 @@ function App() {
       return;
     }
 
-    // If no errors, clear any existing errors and submit
-    setErrors({});
-    setFormData((prev) => [
-      ...prev,
-      {
-        ...currentResponse,
-        timestamp: new Date()
-      }
-    ]);
-    setCurrentResponse({
-      companyType: '',
-      gender: '',
-      age: '',
-      workDuration: '',
-      ...Object.fromEntries([...Array(25)].map((_, i) => [`q${i + 1}`, '']))
-    });
+    // If no errors, save to Firebase
+    console.log('Saving to Firebase...'); // Debug log
+    const responsesRef = ref(db, 'responses');
+
+    const dataToSubmit = {
+      ...currentResponse,
+      timestamp: new Date().toISOString()
+    };
+    console.log('Data to submit:', dataToSubmit); // Debug log
+
+    try {
+      push(responsesRef, dataToSubmit)
+        .then(() => {
+          console.log('Successfully saved to Firebase'); // Debug log
+          // Clear form
+          setErrors({});
+          setCurrentResponse({
+            companyType: '',
+            gender: '',
+            age: '',
+            workDuration: '',
+            ...Object.fromEntries(
+              [...Array(25)].map((_, i) => [`q${i + 1}`, ''])
+            )
+          });
+        })
+        .catch((error) => {
+          console.error('Firebase push error:', error); // More specific error log
+          console.error('Error details:', error.code, error.message); // Additional error details
+        });
+    } catch (error) {
+      console.error('Try-catch error:', error); // Catch any synchronous errors
+    }
   };
 
   const handleExport = () => {
@@ -514,34 +553,6 @@ function getLikertQuestionText(questionNumber) {
     25: 'You find your job interesting.'
   };
   return questions[questionNumber] || '';
-}
-
-// Add these helper functions
-function getPersonalInfoQuestions() {
-  return {
-    gender: {
-      question: 'What is your gender?',
-      options: ['Male', 'Female', 'Other']
-    },
-    age: {
-      question: 'How old are you?',
-      options: [
-        'Under 20 years old',
-        'From 20 to 35 years old',
-        'From 36 to 50 years old',
-        'Over 50 years old'
-      ]
-    },
-    workDuration: {
-      question: 'How long have you been working in your company?',
-      options: [
-        'Under 1 year',
-        'From 1 year to 3 years',
-        'From 3 years to 5 years',
-        'Over 5 years'
-      ]
-    }
-  };
 }
 
 export default App;
