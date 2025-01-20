@@ -248,12 +248,29 @@
 
 /* Add only mobile-specific adjustments */
 @media (max-width: 768px) {
+  .App {
+    padding: 8px;
+  }
+
+  .section {
+    padding: 16px;
+  }
+
+  h2 {
+    font-size: 1.2rem;
+  }
+
   .MuiFormLabel-root {
-    font-size: 0.9rem !important;
+    font-size: 0.85rem !important;
   }
 
   .MuiFormControlLabel-label {
-    font-size: 0.85rem !important;
+    font-size: 0.8rem !important;
+  }
+
+  .MuiButton-root {
+    font-size: 0.8rem !important;
+    padding: 6px 12px !important;
   }
 
   .responses-table {
@@ -262,7 +279,7 @@
 
   .responses-table th,
   .responses-table td {
-    padding: 8px 12px;
+    padding: 8px;
   }
 
   /* Stack export buttons vertically on mobile */
@@ -277,7 +294,7 @@
   }
 
   .likert-scale .MuiFormControlLabel-label {
-    font-size: 0.8rem !important;
+    font-size: 0.75rem !important;
   }
 
   .likert-scale .MuiRadio-root {
