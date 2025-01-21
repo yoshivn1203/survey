@@ -216,12 +216,16 @@ function App() {
     }
   };
 
+  // Update the sorting to ascending order (oldest first)
+  const sortedFormData = [...formData].sort((a, b) => {
+    // Sort in ascending order (oldest first)
+    return new Date(a.timestamp) - new Date(b.timestamp);
+  });
+
   const handleExport = () => {
-    // Skip if no data
     if (formData.length === 0) return;
 
-    // Prepare the data for export
-    const exportData = formData.map((response) => ({
+    const exportData = sortedFormData.map((response) => ({
       Timestamp: formatDate(response.timestamp),
       'Company Type': response.companyType,
       Gender: response.gender,
@@ -706,7 +710,7 @@ function App() {
               <table className='responses-table'>
                 <thead>
                   <tr>
-                    <th>Timestamp</th>
+                    <th>Time</th>
                     <th>Company Type</th>
                     <th>Gender</th>
                     <th>Age</th>
@@ -719,7 +723,7 @@ function App() {
                   </tr>
                 </thead>
                 <tbody>
-                  {formData.map((response, index) => (
+                  {sortedFormData.map((response, index) => (
                     <tr key={index}>
                       <td>{formatDate(response.timestamp)}</td>
                       <td>{response.companyType}</td>
