@@ -21,8 +21,21 @@ import SendIcon from '@mui/icons-material/Send';
 import DownloadIcon from '@mui/icons-material/Download';
 import * as XLSX from 'xlsx';
 import './App.css';
-import { ref, push, onValue } from 'firebase/database';
+import {
+  ref,
+  push,
+  onValue,
+  query,
+  orderByChild,
+  equalTo
+} from 'firebase/database';
 import { db } from './firebase';
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut
+} from 'firebase/auth';
 
 function App() {
   const [formData, setFormData] = useState([]);
@@ -37,6 +50,9 @@ function App() {
   });
   const [activeTab, setActiveTab] = useState(0);
   const [errors, setErrors] = useState({});
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [authError, setAuthError] = useState('');
 
   const theme = createTheme({
     palette: {
@@ -45,6 +61,9 @@ function App() {
       }
     }
   });
+
+  const auth = getAuth();
+  const googleProvider = new GoogleAuthProvider();
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
@@ -85,11 +104,55 @@ function App() {
     });
   }, []);
 
-  // Add this at the top of your component to verify Firebase connection
+  // Check if user has already submitted
+  useEffect(() => {
+    if (isLoggedIn && auth.currentUser) {
+      const responsesRef = ref(db, 'responses');
+      const userResponsesQuery = query(
+        responsesRef,
+        orderByChild('userEmail'),
+        equalTo(auth.currentUser.email)
+      );
 
-  // Update the submit handler with better error handling
+      onValue(userResponsesQuery, (snapshot) => {
+        setHasSubmitted(snapshot.exists());
+      });
+    }
+  }, [isLoggedIn, auth.currentUser]);
+
+  const handleGoogleLogin = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+      setIsLoggedIn(true);
+      setAuthError('');
+    } catch (error) {
+      setAuthError('Login error: ' + error.message);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setIsLoggedIn(false);
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  // Update handleSubmit to include user email
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    if (!isLoggedIn) {
+      setErrors({ auth: 'Please log in to submit the survey' });
+      return;
+    }
+
+    if (hasSubmitted) {
+      setErrors({ auth: 'You have already submitted the survey' });
+      return;
+    }
+
     const newErrors = {};
 
     // Validate all personal information fields
@@ -124,7 +187,8 @@ function App() {
 
     const dataToSubmit = {
       ...currentResponse,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      userEmail: auth.currentUser.email
     };
 
     try {
@@ -142,6 +206,7 @@ function App() {
               [...Array(25)].map((_, i) => [`q${i + 1}`, ''])
             )
           });
+          setHasSubmitted(true);
         })
         .catch((error) => {
           console.error('Firebase push error:', error); // More specific error log
@@ -221,235 +286,392 @@ function App() {
 
         {activeTab === 0 ? (
           <div className='form-container'>
-            <div className='survey-intro'>
-              <h1>Research Survey</h1>
-              <p>
-                This survey was conducted with the aim of studying the role of
-                transformational leadership style in improving job contentment
-                of office workers in Da Nang. Through this research, I hope to
-                clarify the relationship between leadership style and employees'
-                job contentment, thereby providing useful recommendations to
-                improve management effectiveness and enhance work motivation in
-                organizations.
-              </p>
-              <p>
-                In this survey, you will be asked to answer questions related to
-                the leadership style you have experienced as well as your
-                perception of current job contentment. Your answers will play an
-                important role in completing my MBA's thesis at the University
-                of Central Lancashire, UK.
-              </p>
-              <p>
-                I promise that all information provided will be kept strictly
-                confidential. The survey data will be used for research purposes
-                only and only I will have access to it. If you have any
-                questions regarding privacy or research, please contact via
-                email: DTHVo@uclan.ac.uk
-              </p>
-              <p>
-                Thank you for taking the time to participate in this survey!
-              </p>
-              <p>Best regards,</p>
-              <p>Vo Duy Tan Hoang.</p>
-            </div>
-
-            <form onSubmit={handleSubmit}>
-              <div className='section'>
-                <h2>Part I: Personal Information</h2>
-
-                <FormControl
-                  component='fieldset'
-                  className='question'
-                  error={!!errors.companyType}
-                >
-                  <FormLabel component='legend'>
-                    1. Which type of company you are working for in Da Nang
-                    city? *
-                  </FormLabel>
-                  <RadioGroup
-                    name='companyType'
-                    value={currentResponse.companyType}
-                    onChange={handleInputChange}
-                  >
-                    {[
-                      'State-owned company',
-                      'Private company',
-                      'Foreign company'
-                    ].map((option) => (
-                      <FormControlLabel
-                        key={option}
-                        value={option}
-                        control={<Radio />}
-                        label={option}
-                      />
-                    ))}
-                  </RadioGroup>
-                  {errors.companyType && (
-                    <FormHelperText error>{errors.companyType}</FormHelperText>
-                  )}
-                </FormControl>
-
-                <FormControl
-                  component='fieldset'
-                  className='question'
-                  error={!!errors.gender}
-                >
-                  <FormLabel component='legend'>
-                    2. What is your gender? *
-                  </FormLabel>
-                  <RadioGroup
-                    name='gender'
-                    value={currentResponse.gender}
-                    onChange={handleInputChange}
-                  >
-                    {['Male', 'Female', 'Other'].map((option) => (
-                      <FormControlLabel
-                        key={option}
-                        value={option}
-                        control={<Radio />}
-                        label={option}
-                      />
-                    ))}
-                  </RadioGroup>
-                  {errors.gender && (
-                    <FormHelperText error>{errors.gender}</FormHelperText>
-                  )}
-                </FormControl>
-
-                <FormControl
-                  component='fieldset'
-                  className='question'
-                  error={!!errors.age}
-                >
-                  <FormLabel component='legend'>
-                    3. How old are you? *
-                  </FormLabel>
-                  <RadioGroup
-                    name='age'
-                    value={currentResponse.age}
-                    onChange={handleInputChange}
-                  >
-                    {[
-                      'Under 20 years old',
-                      'From 20 to 35 years old',
-                      'From 36 to 50 years old',
-                      'Over 50 years old'
-                    ].map((option) => (
-                      <FormControlLabel
-                        key={option}
-                        value={option}
-                        control={<Radio />}
-                        label={option}
-                      />
-                    ))}
-                  </RadioGroup>
-                  {errors.age && (
-                    <FormHelperText error>{errors.age}</FormHelperText>
-                  )}
-                </FormControl>
-
-                <FormControl
-                  component='fieldset'
-                  className='question'
-                  error={!!errors.workDuration}
-                >
-                  <FormLabel component='legend'>
-                    4. How long have you been working in your company? *
-                  </FormLabel>
-                  <RadioGroup
-                    name='workDuration'
-                    value={currentResponse.workDuration}
-                    onChange={handleInputChange}
-                  >
-                    {[
-                      'Under 1 year',
-                      'From 1 year to 3 years',
-                      'From 3 years to 5 years',
-                      'Over 5 years'
-                    ].map((option) => (
-                      <FormControlLabel
-                        key={option}
-                        value={option}
-                        control={<Radio />}
-                        label={option}
-                      />
-                    ))}
-                  </RadioGroup>
-                  {errors.workDuration && (
-                    <FormHelperText error>{errors.workDuration}</FormHelperText>
-                  )}
-                </FormControl>
-              </div>
-
-              <div className='section'>
-                <h2>
-                  Part II: Survey on the role of transformational leadership
-                  style in improving job contentment
-                </h2>
-                <FormHelperText className='scale-description'>
-                  Please indicate your level of assessment: (1) Strongly
-                  Disagree, (2) Disagree, (3) Neutral, (4) Agree, (5) Strongly
-                  Agree
-                </FormHelperText>
-
-                {[...Array(25)].map((_, index) => (
-                  <FormControl
-                    key={index}
-                    component='fieldset'
-                    className='likert-question'
-                    error={!!errors[`q${index + 1}`]}
-                  >
-                    <FormLabel component='legend'>
-                      {index + 1}. {getLikertQuestionText(index + 1)}
-                    </FormLabel>
-                    <RadioGroup
-                      row
-                      name={`q${index + 1}`}
-                      value={currentResponse[`q${index + 1}`]}
-                      onChange={handleInputChange}
-                      className='likert-scale'
-                    >
-                      {[1, 2, 3, 4, 5].map((value) => (
-                        <FormControlLabel
-                          key={value}
-                          value={value.toString()}
-                          control={<Radio />}
-                          label={value.toString()}
-                          labelPlacement='bottom'
-                        />
-                      ))}
-                    </RadioGroup>
-                    {errors[`q${index + 1}`] && (
-                      <FormHelperText error>
-                        {errors[`q${index + 1}`]}
-                      </FormHelperText>
-                    )}
-                  </FormControl>
-                ))}
-              </div>
-
-              <Stack direction='row' justifyContent='flex-start' sx={{ mt: 4 }}>
-                <Button
-                  type='submit'
-                  variant='contained'
-                  size='large'
-                  endIcon={<SendIcon />}
-                  sx={{
-                    backgroundColor: '#4285f4',
-                    '&:hover': {
-                      backgroundColor: '#357abd'
-                    },
-                    padding: '12px 32px',
-                    fontSize: '1rem',
-                    textTransform: 'none',
-                    borderRadius: '8px',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            {!isLoggedIn ? (
+              <div
+                className='login-container'
+                style={{
+                  padding: '32px',
+                  maxWidth: '400px',
+                  margin: '40px auto',
+                  textAlign: 'center',
+                  backgroundColor: '#ffffff',
+                  borderRadius: '12px',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.08)'
+                }}
+              >
+                <h2
+                  style={{
+                    fontSize: '24px',
+                    fontWeight: '500',
+                    color: '#202124',
+                    marginBottom: '24px',
+                    lineHeight: '1.334'
                   }}
                 >
-                  Submit Survey
+                  Welcome to the Leadership Research Survey
+                </h2>
+                <p
+                  style={{
+                    color: '#5f6368',
+                    fontSize: '14px',
+                    marginBottom: '24px',
+                    lineHeight: '1.5'
+                  }}
+                >
+                  Please sign in with your Google account to participate in the
+                  survey
+                </p>
+                <Button
+                  onClick={handleGoogleLogin}
+                  variant='contained'
+                  fullWidth
+                  sx={{
+                    mt: 2,
+                    backgroundColor: '#fff',
+                    color: '#3c4043',
+                    '&:hover': {
+                      backgroundColor: '#f8f9fa',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.12)'
+                    },
+                    textTransform: 'none',
+                    display: 'flex',
+                    gap: '12px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    padding: '12px 24px',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
+                    border: '1px solid #dadce0',
+                    borderRadius: '4px',
+                    fontSize: '16px',
+                    fontWeight: '500'
+                  }}
+                >
+                  <img
+                    src='https://www.google.com/favicon.ico'
+                    alt='Google'
+                    style={{ width: '18px', height: '18px' }}
+                  />
+                  Sign in with Google
                 </Button>
-              </Stack>
-            </form>
+                {authError && (
+                  <FormHelperText
+                    error
+                    style={{
+                      marginTop: '16px',
+                      fontSize: '14px'
+                    }}
+                  >
+                    {authError}
+                  </FormHelperText>
+                )}
+              </div>
+            ) : (
+              <>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '12px 20px',
+                    backgroundColor: '#f8f9fa',
+                    borderRadius: '8px',
+                    marginBottom: '20px',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px'
+                    }}
+                  >
+                    <img
+                      src={
+                        auth.currentUser.photoURL ||
+                        'https://www.google.com/favicon.ico'
+                      }
+                      alt='Profile'
+                      style={{
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '50%'
+                      }}
+                    />
+                    <span
+                      style={{
+                        color: '#5f6368',
+                        fontSize: '0.9rem'
+                      }}
+                    >
+                      {auth.currentUser.email}
+                    </span>
+                  </div>
+                  <Button
+                    onClick={handleLogout}
+                    variant='outlined'
+                    size='small'
+                    sx={{
+                      textTransform: 'none',
+                      borderColor: '#dadce0',
+                      color: '#5f6368',
+                      '&:hover': {
+                        borderColor: '#5f6368',
+                        backgroundColor: 'rgba(95, 99, 104, 0.04)'
+                      }
+                    }}
+                  >
+                    Sign out
+                  </Button>
+                </div>
+                {hasSubmitted ? (
+                  <div className='already-submitted'>
+                    <h2>Thank you for your submission!</h2>
+                    <p>You have already completed this survey.</p>
+                  </div>
+                ) : (
+                  <div className='survey-intro'>
+                    <h1>Research Survey</h1>
+                    <p>
+                      This survey was conducted with the aim of studying the
+                      role of transformational leadership style in improving job
+                      contentment of office workers in Da Nang. Through this
+                      research, I hope to clarify the relationship between
+                      leadership style and employees' job contentment, thereby
+                      providing useful recommendations to improve management
+                      effectiveness and enhance work motivation in
+                      organizations.
+                    </p>
+                    <p>
+                      In this survey, you will be asked to answer questions
+                      related to the leadership style you have experienced as
+                      well as your perception of current job contentment. Your
+                      answers will play an important role in completing my MBA's
+                      thesis at the University of Central Lancashire, UK.
+                    </p>
+                    <p>
+                      I promise that all information provided will be kept
+                      strictly confidential. The survey data will be used for
+                      research purposes only and only I will have access to it.
+                      If you have any questions regarding privacy or research,
+                      please contact via email: DTHVo@uclan.ac.uk
+                    </p>
+                    <p>
+                      Thank you for taking the time to participate in this
+                      survey!
+                    </p>
+                    <p>Best regards,</p>
+                    <p>Vo Duy Tan Hoang.</p>
+                  </div>
+                )}
+
+                <form onSubmit={handleSubmit}>
+                  <div className='section'>
+                    <h2>Part I: Personal Information</h2>
+
+                    <FormControl
+                      component='fieldset'
+                      className='question'
+                      error={!!errors.companyType}
+                    >
+                      <FormLabel component='legend'>
+                        1. Which type of company you are working for in Da Nang
+                        city? *
+                      </FormLabel>
+                      <RadioGroup
+                        name='companyType'
+                        value={currentResponse.companyType}
+                        onChange={handleInputChange}
+                      >
+                        {[
+                          'State-owned company',
+                          'Private company',
+                          'Foreign company'
+                        ].map((option) => (
+                          <FormControlLabel
+                            key={option}
+                            value={option}
+                            control={<Radio />}
+                            label={option}
+                          />
+                        ))}
+                      </RadioGroup>
+                      {errors.companyType && (
+                        <FormHelperText error>
+                          {errors.companyType}
+                        </FormHelperText>
+                      )}
+                    </FormControl>
+
+                    <FormControl
+                      component='fieldset'
+                      className='question'
+                      error={!!errors.gender}
+                    >
+                      <FormLabel component='legend'>
+                        2. What is your gender? *
+                      </FormLabel>
+                      <RadioGroup
+                        name='gender'
+                        value={currentResponse.gender}
+                        onChange={handleInputChange}
+                      >
+                        {['Male', 'Female', 'Other'].map((option) => (
+                          <FormControlLabel
+                            key={option}
+                            value={option}
+                            control={<Radio />}
+                            label={option}
+                          />
+                        ))}
+                      </RadioGroup>
+                      {errors.gender && (
+                        <FormHelperText error>{errors.gender}</FormHelperText>
+                      )}
+                    </FormControl>
+
+                    <FormControl
+                      component='fieldset'
+                      className='question'
+                      error={!!errors.age}
+                    >
+                      <FormLabel component='legend'>
+                        3. How old are you? *
+                      </FormLabel>
+                      <RadioGroup
+                        name='age'
+                        value={currentResponse.age}
+                        onChange={handleInputChange}
+                      >
+                        {[
+                          'Under 20 years old',
+                          'From 20 to 35 years old',
+                          'From 36 to 50 years old',
+                          'Over 50 years old'
+                        ].map((option) => (
+                          <FormControlLabel
+                            key={option}
+                            value={option}
+                            control={<Radio />}
+                            label={option}
+                          />
+                        ))}
+                      </RadioGroup>
+                      {errors.age && (
+                        <FormHelperText error>{errors.age}</FormHelperText>
+                      )}
+                    </FormControl>
+
+                    <FormControl
+                      component='fieldset'
+                      className='question'
+                      error={!!errors.workDuration}
+                    >
+                      <FormLabel component='legend'>
+                        4. How long have you been working in your company? *
+                      </FormLabel>
+                      <RadioGroup
+                        name='workDuration'
+                        value={currentResponse.workDuration}
+                        onChange={handleInputChange}
+                      >
+                        {[
+                          'Under 1 year',
+                          'From 1 year to 3 years',
+                          'From 3 years to 5 years',
+                          'Over 5 years'
+                        ].map((option) => (
+                          <FormControlLabel
+                            key={option}
+                            value={option}
+                            control={<Radio />}
+                            label={option}
+                          />
+                        ))}
+                      </RadioGroup>
+                      {errors.workDuration && (
+                        <FormHelperText error>
+                          {errors.workDuration}
+                        </FormHelperText>
+                      )}
+                    </FormControl>
+                  </div>
+
+                  <div className='section'>
+                    <h2>
+                      Part II: Survey on the role of transformational leadership
+                      style in improving job contentment
+                    </h2>
+                    <FormHelperText className='scale-description'>
+                      Please indicate your level of assessment: (1) Strongly
+                      Disagree, (2) Disagree, (3) Neutral, (4) Agree, (5)
+                      Strongly Agree
+                    </FormHelperText>
+
+                    {[...Array(25)].map((_, index) => (
+                      <FormControl
+                        key={index}
+                        component='fieldset'
+                        className='likert-question'
+                        error={!!errors[`q${index + 1}`]}
+                      >
+                        <FormLabel component='legend'>
+                          {index + 1}. {getLikertQuestionText(index + 1)}
+                        </FormLabel>
+                        <RadioGroup
+                          row
+                          name={`q${index + 1}`}
+                          value={currentResponse[`q${index + 1}`]}
+                          onChange={handleInputChange}
+                          className='likert-scale'
+                        >
+                          {[1, 2, 3, 4, 5].map((value) => (
+                            <FormControlLabel
+                              key={value}
+                              value={value.toString()}
+                              control={<Radio />}
+                              label={value.toString()}
+                              labelPlacement='bottom'
+                            />
+                          ))}
+                        </RadioGroup>
+                        {errors[`q${index + 1}`] && (
+                          <FormHelperText error>
+                            {errors[`q${index + 1}`]}
+                          </FormHelperText>
+                        )}
+                      </FormControl>
+                    ))}
+                  </div>
+
+                  <Stack
+                    direction='row'
+                    justifyContent='flex-start'
+                    sx={{ mt: 4 }}
+                  >
+                    <Button
+                      type='submit'
+                      variant='contained'
+                      size='large'
+                      endIcon={<SendIcon />}
+                      sx={{
+                        backgroundColor: '#4285f4',
+                        '&:hover': {
+                          backgroundColor: '#357abd'
+                        },
+                        padding: '12px 32px',
+                        fontSize: '1rem',
+                        textTransform: 'none',
+                        borderRadius: '8px',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                      }}
+                    >
+                      Submit Survey
+                    </Button>
+                  </Stack>
+                </form>
+              </>
+            )}
           </div>
         ) : (
           <div className='responses-container'>
